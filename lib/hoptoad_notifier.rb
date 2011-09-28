@@ -28,8 +28,8 @@ module HoptoadNotifier
 
     # Takes a block and adds it to the list of backtrace filters. When the filters
     # run, the block will be handed each line of the backtrace and can modify
-    # it as necessary. For example, by default a path matching the RAILS_ROOT
-    # constant will be transformed into "[RAILS_ROOT]"
+    # it as necessary. For example, by default a path matching the Rails.root
+    # constant will be transformed into "[Rails.root]"
     def filter_backtrace &block
       self.backtrace_filters << block
     end
@@ -101,9 +101,6 @@ module HoptoadNotifier
     def configure
       add_default_filters
       yield self
-      if defined?(ActionController::Base) && !ActionController::Base.include?(HoptoadNotifier::Catcher)
-        ActionController::Base.send(:include, HoptoadNotifier::Catcher)
-      end
     end
 
     def protocol #:nodoc:
@@ -143,7 +140,7 @@ module HoptoadNotifier
       self.backtrace_filters.clear
 
       filter_backtrace do |line|
-        line.gsub(/#{RAILS_ROOT}/, "[RAILS_ROOT]")
+        line.gsub(/#{Rails.root}/, "[Rails.root]")
       end
 
       filter_backtrace do |line|
@@ -164,21 +161,10 @@ module HoptoadNotifier
     end
   end
 
-  # Include this module in Controllers in which you want to be notified of errors.
   module Catcher
 
-    def self.included(base) #:nodoc:
-      if base.instance_methods.include? 'rescue_action_in_public' and !base.instance_methods.include? 'rescue_action_in_public_without_hoptoad'
-        base.send(:alias_method, :rescue_action_in_public_without_hoptoad, :rescue_action_in_public)
-        base.send(:alias_method, :rescue_action_in_public, :rescue_action_in_public_with_hoptoad)
-      end
-    end
-
-    # Overrides the rescue_action method in ActionController::Base, but does not inhibit
-    # any custom processing that is defined with Rails 2's exception helpers.
-    def rescue_action_in_public_with_hoptoad exception
+    def handle(exception)
       notify_hoptoad(exception) unless ignore?(exception) || ignore_user_agent?
-      rescue_action_in_public_without_hoptoad(exception)
     end
 
     # This method should be used for sending manual notifications while you are still
@@ -204,7 +190,7 @@ module HoptoadNotifier
     private
 
     def public_environment? #nodoc:
-      defined?(RAILS_ENV) and !['development', 'test'].include?(RAILS_ENV)
+      defined?(Rails.env) and !['development', 'test'].include?(Rails.env)
     end
 
     def ignore?(exception) #:nodoc:
@@ -228,7 +214,7 @@ module HoptoadNotifier
       if self.respond_to? :request
         data[:request] = {
           :params      => request.parameters.to_hash,
-          :rails_root  => File.expand_path(RAILS_ROOT),
+          :Rails.root  => File.expand_path(Rails.root),
           :url         => "#{request.protocol}#{request.host}#{request.request_uri}"
         }
         data[:environment].merge!(request.env.to_hash)

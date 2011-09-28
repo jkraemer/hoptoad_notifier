@@ -6,6 +6,21 @@ This is the notifier plugin for integrating apps with Hoptoad.
 When an uncaught exception occurs, HoptoadNotifier will POST the relevant data 
 to the Hoptoad server specified in your environment.
 
+
+
+WARNING
+-------
+
+THIS IS A HACK.
+
+- it is based on the (old) version that is known to work with the redmine_hoptoad_server Redmine
+  plugin (https://github.com/yeah/redmine_hoptoad_server)
+- it features a rack middleware for easy integration with Rails3
+- it will NOT run on Rails 2.x or older. Please get the revision mentioned in the redmine_hoptoad_server
+  readme directly from https://github.com/thoughtbot/hoptoad_notifier if you intend to use the plugin with
+  Rails < 3.0
+
+
 INSTALLATION
 ------------
 
@@ -21,31 +36,21 @@ Remove the vendor/plugins/exception_notifier directory.
 
 INSTALL HOPTOAD_NOTIFIER
 
-From your project's RAILS_ROOT, run:
-
-  script/plugin install git://github.com/thoughtbot/hoptoad_notifier.git
+just put the plugin into vendor/plugins
 
 CONFIGURATION
 
-You should have something like this in config/initializers/hoptoad.rb.
+You should have something like this in config/environments/production.rb:
 
-  HoptoadNotifier.configure do |config|
-    config.api_key = '1234567890abcdef'
-  end
+  Whatever::Application.config.middleware.use HoptoadNotifier::Middleware,
+                                              :api_key => '1234567890abcdef'
+                                              
+For use with the redmine plugin mentioned above, replace the api_key value with
+the options hash as described there.
 
-(Please note that this configuration should be in a global configuration, and
-is *not* environment-specific. Hoptoad is smart enough to know what errors are
-caused by what environments, so your staging errors don't get mixed in with
-your production errors.)
 
 That should be it! Now all exceptions will be logged to Hoptoad where they can
-be aggregated, filtered, sorted, analyzed, massaged, and searched. In previous
-releases you had to include HoptoadNotifier::Catcher into your
-ApplicationController, but the plugin takes care of that now.
-
-** NOTE FOR RAILS 1.2.* USERS: **
-You will need to copy the hoptoad_notifier_tasks.rake file into your
-RAILS_ROOT/lib/tasks directory in order for the following to work:
+be aggregated, filtered, sorted, analyzed, massaged, and searched.
 
 You can test that hoptoad is working in your production environment by using 
 this rake task (from RAILS_ROOT):
@@ -57,22 +62,6 @@ which will be visible immediately.
 
 USAGE
 
-For the most part, hoptoad works for itself.  Once you've included the notifier 
-in your ApplicationController (which is now done automatically by the plugin), 
-all errors will be rescued by the #rescue_action_in_public provided by the plugin.
-
-If you want to log arbitrary things which you've rescued yourself from a 
-controller, you can do something like this:
-
-  ...
-  rescue => ex
-    notify_hoptoad(ex)
-    flash[:failure] = 'Encryptions could not be rerouted, try again.'
-  end
-  ...
-
-The #notify_hoptoad call will send the notice over to hoptoad for later 
-analysis.
 
 GOING BEYOND EXCEPTIONS
 
