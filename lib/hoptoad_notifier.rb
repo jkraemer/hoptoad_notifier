@@ -29,7 +29,7 @@ module HoptoadNotifier
     # Takes a block and adds it to the list of backtrace filters. When the filters
     # run, the block will be handed each line of the backtrace and can modify
     # it as necessary. For example, by default a path matching the Rails.root
-    # constant will be transformed into "[Rails.root]"
+    # constant will be transformed into "[RAILS_ROOT]"
     def filter_backtrace &block
       self.backtrace_filters << block
     end
@@ -140,7 +140,7 @@ module HoptoadNotifier
       self.backtrace_filters.clear
 
       filter_backtrace do |line|
-        line.gsub(/#{Rails.root}/, "[Rails.root]")
+        line.gsub(/#{Rails.root}/, "[RAILS_ROOT]")
       end
 
       filter_backtrace do |line|
@@ -214,7 +214,7 @@ module HoptoadNotifier
       if self.respond_to? :request
         data[:request] = {
           :params      => request.parameters.to_hash,
-          :Rails.root  => File.expand_path(Rails.root),
+          :rails_root  => File.expand_path(Rails.root),
           :url         => "#{request.protocol}#{request.host}#{request.request_uri}"
         }
         data[:environment].merge!(request.env.to_hash)
