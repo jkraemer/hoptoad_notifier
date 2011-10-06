@@ -5,7 +5,7 @@ module HoptoadNotifier
     end
 
     def replacement(with)
-      @replacement ||= HoptoadNotifier.configuration.user_information.gsub(/\{\{\s*error_id\s*\}\}/, with.to_s)
+      HoptoadNotifier.configuration.user_information.gsub(/\{\{\s*error_id\s*\}\}/, with.to_s)
     end
 
     def call(env)
